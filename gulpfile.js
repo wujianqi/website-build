@@ -1,14 +1,13 @@
-const gulp = require('gulp');
+const {src, dest, watch, task, series, parallel} = require('gulp');
 const path = require('path');
 const through2 = require('through2').obj;
-const gulpIf = require('gulp-if');
+const gif = require('gulp-if');
 const bro = require('gulp-bro');
 const browserSync = require('browser-sync').create();
-const sass = require('gulp-sass');
-const autoprefixer = require('gulp-autoprefixer');
+const sass = require('gulp-dart-sass');
 const cssBase64 = require('gulp-css-base64');
+const cleanCss = require('gulp-clean-css');
 const htmlmin = require('gulp-htmlmin');
-const cssmin = require('gulp-cssmin');
 const imagemin = require('gulp-imagemin');
 const sourcemaps = require('gulp-sourcemaps');
 const fileinclude = require('gulp-file-include');
@@ -38,88 +37,92 @@ function html(done) {
         const style = styles[index];
         const sources = (script && style) ? script.concat(style).flat() : (script || style || void 0);
 
-        const vfs = gulp.src(conf.source +'/**/' + html + '.html') // 模版替换
+        const vfs = src(conf.source +'/**/' + html + '.html') // 模版替换
             .pipe(fileinclude({
                 prefix: '<!-- @@',
                 suffix: '-->',
                 basepath: '@file'
-            }))
+            }));
 
         if(sources && sources.length > 0) { // 注入文件
-            vfs.pipe(inject(gulp.src(sources, {read: false}), {
+            vfs.pipe(inject(src(sources, {read: false}), {
                 ignorePath: conf.output,
                 addRootSlash:false,
                 removeTags:true
             }))
         }
-        vfs.pipe(gulpIf(isProd, htmlmin({
+        vfs.pipe(gif(isProd, htmlmin({
+            removeComments: true,
+            removeEmptyAttributes: true,
             collapseWhitespace: true
         })))
-        .pipe(gulp.dest(conf.output));
+        .pipe(dest(conf.output));
     });
     done();
 }
 
 // css合并编译
-function css() {
+function css() {    
     styles = new Array(conf.entrys.length);
-    return gulp.src(conf.source +'/**/@(' + conf.entrys.join('|') + ')*(.*).scss')
-        .pipe(gulpIf(isProd && conf.hash, rev()))
+    return src(conf.source +'/**/@(' + conf.entrys.join('|') + ')*(.*).scss')
+        .pipe(gif(isProd && conf.hash, rev()))
         .pipe(through2(function(file, enc, cb){
             addInjectPath(file)
             cb(null, file);
         }))
-        .pipe(gulpIf(!isProd, sourcemaps.init()))
+        .pipe(gif(!isProd, sourcemaps.init()))
         .pipe(sass({
-            includePaths: ['node_modules', path.join(__dirname,'/node_modules/bootstrap/scss')]
+            includePaths: ['node_modules', path.join(__dirname,'/node_modules/bootstrap/scss')],
         }).on('error', sass.logError))
-        .pipe(autoprefixer())
         .pipe(cssBase64({
             baseDir: '../' + conf.images,
             maxWeightResource: 100,
             extensionsAllowed: ['.gif', '.jpg']
         }))
-        .pipe(gulpIf(!isProd, sourcemaps.write()))
-        .pipe(gulpIf(isProd, cssmin()))
-        .pipe(gulp.dest(conf.output));
+        .pipe(gif(!isProd, sourcemaps.write()))
+        .pipe(gif(isProd, cleanCss()))
+        .pipe(dest(conf.output));
 }
 
 // js合并编译
 function js() {
     scripts = new Array(conf.entrys.length);
-    return gulp.src(conf.source +'/**/@(' + conf.entrys.join('|') + ')*(.*).js')
+    return src(conf.source +'/**/@(' + conf.entrys.join('|') + ')*(.*).js')
         .pipe(bro({
             transform: [
-                [ 'babelify', { presets: [ 'env' ]}],
+                [ 'babelify', { presets: [ 'env' ], plugins: [
+                    "syntax-dynamic-import",
+                    "transform-class-properties"
+                ]}],
                 [ 'uglifyify', { global: true, sourceMap: !isProd  }]
             ]
         }))
-        .pipe(gulpIf(isProd&& conf.hash, rev()))
+        .pipe(gif(isProd&& conf.hash, rev()))
         .pipe(through2(function(file, enc, cb){
             addInjectPath(file)
             cb(null, file);
         }))        
-        .pipe(gulp.dest(conf.output));
+        .pipe(dest(conf.output));
 }
 
 // 图片压缩
 function img() {
-    return gulp.src(conf.source +'/**/*.+(jpg|jpeg|gif|png|svg)')
-        .pipe(gulpIf(isProd, imagemin({
+    return src(conf.source +'/**/*.+(jpg|jpeg|gif|png|svg)')
+        .pipe(gif(isProd, imagemin({
             progressive: true
         })))
-        .pipe(gulp.dest(conf.output));
+        .pipe(dest(conf.output));
 }
 
 // 复制静态非编译文件
 function copy() {
-    return gulp.src(conf.source + '/**/*.+(' + conf.statics.join('|') + ')')
-		.pipe(gulp.dest(conf.output))
+    return src(conf.source + '/**/*.+(' + conf.statics.join('|') + ')')
+		.pipe(dest(conf.output))
 }
 
 // 清理输出目录
 function cls() {
-    return gulp.src(conf.output + '/*', {read: false})
+    return src(conf.output + '/*', {read: false})
         .pipe(clean());
 }
 
@@ -127,7 +130,7 @@ function cls() {
 function serve() {
     browserSync.init({
         open: true,
-        server: './'+ conf.output
+        server: conf.output
     });
 }
 // 重启
@@ -136,21 +139,19 @@ function reload(done) {
     done();
 }
 
-// 监听
-function watch() {
-    gulp.watch(conf.source +'/**/*.html', gulp.series(html, reload));
-    gulp.watch(conf.source +'/**/*.scss', gulp.series(css, reload));
-    gulp.watch(conf.source +'/**/*.js', gulp.series(js, reload));
-    gulp.watch(conf.source +'/**/*.+(jpg|jpeg|gif|png|svg)', gulp.series(img, reload));
-    gulp.watch(conf.source +'/**/*.+(' + conf.statics.join('|') + ')', 
-        {delay: 3000}, gulp.series(copy, reload));
-    return;
-}
-
 //页面编译任务
-function compile() {
-    return gulp.series(gulp.parallel(css, js), html);
+const compile = series(parallel(css, js), html);
+
+// 监听
+function watchFiles(done) {
+    watch(conf.source +'/**/*.html', series(html, reload));
+    watch(conf.source +'/**/*.scss', series(css, reload));
+    watch(conf.source +'/**/*.js', series(js, reload));
+    watch(conf.source +'/**/*.+(jpg|jpeg|gif|png|svg)', series(img, reload));
+    watch(conf.source +'/**/*.+(' + conf.statics.join('|') + ')', 
+        {delay: 3000}, series(copy, reload));
+    done();
 }
 
-gulp.task('default', gulp.series(cls, gulp.parallel(copy, compile, img)));
-gulp.task('serve', gulp.parallel(compile, img, watch, serve));
+task('default', series(cls, parallel(copy, compile, img)));
+task('serve', series(parallel(compile, img), parallel(serve, watchFiles)));

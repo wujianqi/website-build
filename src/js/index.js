@@ -1,12 +1,12 @@
 import $ from 'jquery';
-//require('bootstrap/transition.js');
-//require('bootstrap/collapse.js');
-//require('lightbox2');
-require('jquery-lazyload');
+import 'bootstrap/js/dist/modal';
+import './common';
+import './plugin';
 
-$("img").lazyload();
-
-$(window).scroll(function () {
+/* 
+$(window).on('scroll', function () {
     if ($(".navbar").offset().top > 50) {$(".navbar-fixed-top").addClass("top-nav");
     }else {$(".navbar-fixed-top").removeClass("top-nav");}
-})
+}); */
+$('.lead').test();
+$('#myModal').modal();

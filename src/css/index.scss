@@ -3,8 +3,8 @@ $theme-colors: (
     "dark": #000000
 );
 
-@import "bootstrap";
-@import "header";
+@import "base";
+@import "common";
 
 body {
     padding-top:56px;
@@ -12,6 +12,7 @@ body {
 .footer {
     margin-top:3rem;
 }
-.navbar {
+/* .navbar {
     border-bottom:1px solid #eee;
 }
+ */
