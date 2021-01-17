@@ -7,6 +7,7 @@ const browserSync = require('browser-sync').create();
 const sass = require('gulp-dart-sass');
 const cssBase64 = require('gulp-css-base64');
 const cleanCss = require('gulp-clean-css');
+const purgecss = require('gulp-purgecss')
 const htmlmin = require('gulp-htmlmin');
 const imagemin = require('gulp-imagemin');
 const sourcemaps = require('gulp-sourcemaps');
@@ -79,6 +80,9 @@ function css() {
             maxWeightResource: 100,
             extensionsAllowed: ['.gif', '.jpg']
         }))
+        .pipe(gif(isProd, purgecss({
+            content: [conf.source +'/**/*.html']
+        })))
         .pipe(gif(!isProd, sourcemaps.write()))
         .pipe(gif(isProd, cleanCss()))
         .pipe(dest(conf.output));
