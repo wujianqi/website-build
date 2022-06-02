@@ -1,56 +1,37 @@
 {
   "name": "website-build",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "",
-  "author": "wujianqi",
-  "license": "MIT",
-  "homepage": "",
   "repository": {
     "type": "git",
     "url": "https://github.com/wujianqi/website-build.git"
   },
   "scripts": {
-    "start": "gulp",
-    "dev": "gulp serve",
-    "lint": "eslint --fix src",
-    "build": "cross-env NODE_ENV=prod gulp"
+    "start": "parcel src/*.html --open",
+    "build": "parcel build src/*.html --no-source-maps"
   },
+  "author": "wujianqi",
+  "license": "MIT",
   "dependencies": {
-    "bootstrap": "^4.5.3",
-    "jquery": "^3.5.1",
-    "lazyload": "^2.0.0-rc.2",
-    "lightbox2": "^2.11.3",
+    "bootstrap": "^4.6.1",
+    "jquery": "^3.6.0",
     "popper.js": "^1.16.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.10",
-    "babel-plugin-syntax-dynamic-import": "^6.18.0",
-    "babel-plugin-transform-class-properties": "^6.24.1",
-    "babel-preset-env": "^1.7.0",
-    "babelify": "^10.0.0",
-    "browser-sync": "^2.26.13",
-    "cross-env": "^7.0.2",
-    "eslint": "^7.18.0",
-    "gulp": "^4.0.2",
-    "gulp-bro": "^2.0.0",
-    "gulp-clean": "^0.4.0",
-    "gulp-clean-css": "^4.3.0",
-    "gulp-css-base64": "^2.0.0",
-    "gulp-dart-sass": "^1.0.2",
-    "gulp-file-include": "^2.3.0",
-    "gulp-htmlmin": "^5.0.1",
-    "gulp-if": "^3.0.0",
-    "gulp-imagemin": "^7.1.0",
-    "gulp-inject": "^5.0.5",
-    "gulp-purgecss": "^3.1.3",
-    "gulp-rev": "^9.0.0",
-    "gulp-sourcemaps": "^3.0.0",
-    "sass": "^1.32.4",
-    "uglifyify": "^5.0.2"
+    "@babel/core": "^7.17.10",
+    "@parcel/transformer-postcss": "^2.5.0",
+    "@parcel/transformer-sass": "^2.5.0",
+    "parcel": "^2.5.0",
+    "parcel-reporter-static-files-copy": "^1.3.4",
+    "postcss": "^8.4.13",
+    "posthtml-include": "^1.7.3"
   },
   "browserslist": [
     "> 1%",
-    "last 2 versions",
-    "ie 10-11"
-  ]
+    "not ie <= 9",
+    "last 3 versions"
+  ],
+  "engines": {
+    "node": "10"
+  }
 }
